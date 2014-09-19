@@ -1,0 +1,5 @@
+---
+- name: restart askbot
+  service: >
+    name={{ askbot_name }}
+    state=restarted

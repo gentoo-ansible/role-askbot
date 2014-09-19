@@ -4,6 +4,7 @@
     src=uwsgi_askbot.j2
     dest=/etc/conf.d/{{ askbot_name }}
     owner=root group=root mode=0644
+  notify: restart askbot
   tags: config
 
 - name: symlink uwsgi runscript for askbot

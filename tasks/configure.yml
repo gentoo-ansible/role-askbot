@@ -8,11 +8,13 @@
   with_items:
     - settings.py
     - uwsgi.ini
+  notify: restart askbot
 
 - name: generate random session_key
   shell: >
     openssl rand -base64 34 | head -c 24 > {{ askbot_conf_dir }}/session_key
     creates={{ askbot_conf_dir }}/session_key
+  notify: restart askbot
 
 - name: ensure rights of session_key file
   file: >
