@@ -1,0 +1,66 @@
+---
+- name: install packages
+  portage: package={{ item }}
+  with_items:
+    - dev-python/virtualenv
+    - dev-python/psycopg
+    - dev-libs/libmemcached
+  tags: packages
+
+- name: create askbot group
+  group: >
+    name={{ askbot_group }}
+    system=yes
+  tags: accounts
+
+- name: create askbot user
+  user: >
+    name={{ askbot_user }}
+    group={{ askbot_group }}
+    home={{ askbot_base_dir }}
+    createhome=no
+    shell=/sbin/nologin
+    system=yes
+  tags: accounts
+
+- name: prepare base directory
+  file: >
+    state=directory
+    path={{ askbot_base_dir }}
+    owner={{ askbot_user }}
+    group={{ askbot_group }}
+    mode='0755'
+
+- name: clone askbot repository
+  sudo_user: "{{ askbot_user }}"
+  git: >
+    repo={{ askbot_repo_url }}
+    version={{ askbot_version }}
+    dest={{ askbot_base_dir }}
+
+- name: create other directories
+  file: >
+    state=directory
+    path={{ item.path }}
+    owner={{ askbot_user }} group={{ askbot_group }} mode={{ item.mode | default('0755') }}
+  with_items:
+    - { path: "{{ askbot_base_dir }}/static" }
+    - { path: "{{ askbot_uploads_dir }}", mode: '0750' }
+    - { path: "{{ askbot_conf_dir }}" }
+    - { path: "{{ askbot_logs_dir }}" }
+
+- name: add django_compressor, psycopg and pylibmc to requirements
+  lineinfile: >
+    dest={{ askbot_base_dir }}/askbot_requirements.txt
+    regexp='^{{ item }}'
+    line={{ item }}
+  with_items:
+    - django_compressor
+    - psycopg2
+    - pylibmc
+
+- name: install requirements
+  sudo_user: "{{ askbot_user }}"
+  pip: >
+    requirements={{ askbot_base_dir }}/askbot_requirements.txt
+    virtualenv={{ askbot_virtenv_dir }}
